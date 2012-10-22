@@ -3,6 +3,9 @@ Flake8-GEdit
 
 Flake8-GEdit is a python plugin to use flake8 inside GEdit 3.
 
+**Sources :** [GitHub](http://github.com/khertan/flake8-gedit)
+**Bugtracker :** [GitHub](http://github.com/khertan/flake8-gedit/issues)
+
 Feature
 -------
 * Parse file when loading python code, and saving it.
@@ -21,7 +24,7 @@ Copy flake8_gedit.py and flake8_gedit.plugin in $HOME/.local/share/gedit/plugins
 Screenshots
 -----------
 
-None yet
+![Flake8 GEdit Plugin Screenshot](http://khertan.net/medias/flake8-gedit_screenshot.png)
 
 Licence
 -------
