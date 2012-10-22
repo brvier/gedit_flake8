@@ -1,0 +1,9 @@
+[Plugin]
+Loader=python
+Module=gedit_flake8
+IAge=3
+Name=Flake8
+Description=Flake8 for GEdit
+Authors=Benoît HERVIER <khertan@khertan.net>>
+Copyright=Copyright © 2012 Benoît HERVIER <khertan@khertan.net>
+Website=http://www.khertan.net/gedit-flake8
