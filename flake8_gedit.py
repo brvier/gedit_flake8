@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""flake8_gedit.py: A plugin for gedit to display error and warning from flake8."""
+"""flake8_gedit.py: A plugin for gedit
+   to display error and warning from flake8."""
 
 __author__ = "Benoît HERVIER"
 __copyright__ = "Copyright 2012 " + __author__
 __license__ = "GPL3"
-__version__ = "1.0.0"
+__version__ = "0.1.0"
 __maintainer__ = "Benoît HERVIER"
 __email__ = "khertan@khertan.net"
 __status__ = "Alpha"
@@ -138,7 +139,8 @@ class ResultsPanel(Gtk.Viewport):
         builder.connect_signals(self)
         widget = builder.get_object("hbox_panel")
         scrolledwindow = builder.get_object("scrolledwindow_results")
-        self.checkbutton_highlight = builder.get_object("checkbutton_highlight")
+        self.checkbutton_highlight = \
+            builder.get_object("checkbutton_highlight")
 
         self._view = ResultsView(self)
 
@@ -258,11 +260,13 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
 
     def _add_tags(self, document):
         """Register new tags in the sourcebuffer"""
-        self._word_error_tags[document] = document.create_tag("word-error",
-                                                              underline=Pango.Underline.ERROR)
+        self._word_error_tags[document] = \
+            document.create_tag("word-error",
+                                underline=Pango.Underline.ERROR)
 
-        self._line_error_tags[document] = document.create_tag("line-error",
-                                                              background="#ffc0c0")
+        self._line_error_tags[document] = \
+            document.create_tag("line-error",
+                                background="#ffc0c0")
 
     def _remove_tags(self, document):
         """Remove not anymore used tags"""
@@ -284,10 +288,12 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
 
             # apply tag to word, if any
             if err.tag:
-                match_start, match_end = start.forward_search(err.tag,
-                                                              Gtk.TEXT_SEARCH_TEXT_ONLY,
-                                                              end)
-                document.apply_tag(self._word_error_tags[document], match_start, match_end)
+                match_start, match_end = \
+                    start.forward_search(err.tag,
+                                         Gtk.TEXT_SEARCH_TEXT_ONLY,
+                                         end)
+                document.apply_tag(self._word_error_tags[document],
+                                   match_start, match_end)
 
             # apply tag to entire line
             document.apply_tag(self._line_error_tags[document], start, end)
@@ -297,12 +303,14 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
         if document.get_language().get_name() != 'Python':
             return True
 
-        curline = document.get_iter_at_mark(document.get_insert()).get_line() + 1
+        curline = document.get_iter_at_mark(
+            document.get_insert()).get_line() + 1
         for err in self._errors[document]:
             if err.lineno == curline:
                 statusbar = self.window.get_statusbar()
                 statusbar_ctxtid = statusbar.get_context_id('Flake8')
-                statusbar.push(statusbar_ctxtid, 'Line : %s : %s' % (err.lineno, err.message))
+                statusbar.push(statusbar_ctxtid, 'Line : %s : %s'
+                               % (err.lineno, err.message))
 
     def analyse(self, document, option):
         """Launch a flake8 process and populate vars"""
@@ -311,16 +319,21 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
 
         errors = []
         path = document.get_location().get_path()
-        stdout, stderr = Popen(['flake8', path], stdout=PIPE, stderr=PIPE).communicate()
+        stdout, stderr = Popen(['flake8', path],
+                               stdout=PIPE, stderr=PIPE).communicate()
         output = stdout if stdout else stderr
 
         if not output:
             return
 
-        line_format = re.compile('(?P<path>[^:]+):(?P<line>\d+):(?P<character>\d+:)?\s(?P<message>.*$)')
+        line_format = re.compile(
+            '(?P<path>[^:]+):(?P<line>\d+):'
+            + '(?P<character>\d+:)?\s(?P<message>.*$)')
 
         if document not in self._results:
             self._results[document] = ResultsModel()
+        else:
+            self._results[document].clear()
 
         for line in output.splitlines():
             m = line_format.match(line)
@@ -342,6 +355,7 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
             errors.append(err)
             self._results[document].add(err)
 
+        self._remove_tags(document)
         self._errors[document] = errors
         self._highlight_errors(self._errors[document])
         self._panel.set_model(self._results[document])
@@ -349,6 +363,10 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
         statusbar = self.window.get_statusbar()
         statusbar_ctxtid = statusbar.get_context_id('Flake8')
         if len(errors) > 0:
-            statusbar.push(statusbar_ctxtid, 'Line : %s : %s' % (errors[0].lineno, errors[0].message))
+            statusbar.push(statusbar_ctxtid,
+                           'Line : %s : %s'
+                           % (errors[0].lineno, errors[0].message))
         else:
-            statusbar.push(statusbar_ctxtid, "No errors found on %s." % document.get_uri_for_display())
+            statusbar.push(statusbar_ctxtid,
+                           "No errors found on %s."
+                           % document.get_uri_for_display())
