@@ -306,17 +306,19 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
                                stdout=PIPE, stderr=PIPE).communicate()
         output = stdout if stdout else stderr
 
-        if not output:
-            return
-
         line_format = re.compile(
             '(?P<path>[^:]+):(?P<line>\d+):'
             + '(?P<character>\d+:)?\s(?P<message>.*$)')
+
+        self._remove_tags(document)
 
         if document not in self._results:
             self._results[document] = ResultsModel()
         else:
             self._results[document].clear()
+
+        if not output:
+            return
 
         for line in output.splitlines():
             m = line_format.match(line)

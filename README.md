@@ -37,3 +37,4 @@ Todo
 * Package it
 * Create an installer
 * Test it
+* User color for highlighting error from theme instead of a fixed one
