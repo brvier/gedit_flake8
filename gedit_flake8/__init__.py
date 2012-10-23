@@ -7,7 +7,7 @@
 __author__ = "Benoît HERVIER"
 __copyright__ = "Copyright 2012 " + __author__
 __license__ = "GPLv3"
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __maintainer__ = "Benoît HERVIER"
 __email__ = "khertan@khertan.net"
 __status__ = "Alpha"
@@ -19,6 +19,9 @@ import os
 
 
 def apply_style(style, tag):
+    """Apply a style to a tag from the default theme style
+       This lightly modified code come from the synctext.py gedit plugin"""
+
     def apply_style_prop(tag, style, prop):
         if style.get_property(prop + "-set"):
             tag.set_property(prop, style.get_property(prop))
