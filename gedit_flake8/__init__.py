@@ -294,6 +294,8 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
         if document is None:
             return True
 
+        print document.get_tag_table()
+        print dir(document.get_tag_table())
         try:
             if document.get_language().get_name() != 'Python':
                 return True
