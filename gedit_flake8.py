@@ -318,6 +318,9 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
             self._results[document].clear()
 
         if not output:
+            statusbar.push(statusbar_ctxtid,
+                           "No errors found on %s."
+                           % path)
             return
 
         for line in output.splitlines():
