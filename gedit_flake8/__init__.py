@@ -6,7 +6,7 @@
 
 __author__ = "Benoît HERVIER"
 __copyright__ = "Copyright 2012 " + __author__
-__license__ = "GPL3"
+__license__ = "GPLv3"
 __version__ = "0.2.0"
 __maintainer__ = "Benoît HERVIER"
 __email__ = "khertan@khertan.net"
@@ -18,17 +18,53 @@ from subprocess import Popen, PIPE
 import os
 
 
+def apply_style(style, tag):
+    def apply_style_prop(tag, style, prop):
+        if style.get_property(prop + "-set"):
+            tag.set_property(prop, style.get_property(prop))
+        else:
+            tag.set_property(prop, None)
+
+    def apply_style_prop_bool(tag, style, prop, whentrue, whenfalse):
+        if style.get_property(prop + "-set"):
+            prop_value = whentrue if style.get_property(prop) else whenfalse
+            tag.set_property(prop, prop_value)
+
+    apply_style_prop(tag, style, "foreground")
+    apply_style_prop(tag, style, "background")
+
+    try:
+        apply_style_prop_bool(tag,
+                              style,
+                              "weight",
+                              Pango.Weight.BOLD,
+                              Pango.Weight.NORMAL)
+    except TypeError, err:
+        #Different version of gtk 3 have different properties ... :(
+        print err
+
+    apply_style_prop_bool(tag,
+                          style,
+                          "italic",
+                          Pango.Style.ITALIC,
+                          Pango.Style.NORMAL)
+    apply_style_prop_bool(tag,
+                          style,
+                          "underline",
+                          Pango.Underline.SINGLE,
+                          Pango.Underline.NONE)
+    apply_style_prop(tag, style, "strikethrough")
+
+
 class Message(object):
 
-    def __init__(self, document, lineno, column, message, tag):
+    def __init__(self, document, lineno, column, message):
 
         self._doc = document
 
         self._lineno = lineno
         self._column = column
         self._message = message
-
-        self._tag = tag
 
         self._start_iter = None
         self._end_iter = None
@@ -58,8 +94,6 @@ class Message(object):
     lineno = property(lambda self: self._lineno)
     column = property(lambda self: self._lineno)
     message = property(lambda self: self._message)
-
-    tag = property(lambda self: self._tag)
 
     start = property(lambda self: self._start_iter)
     end = property(lambda self: self._end_iter)
@@ -168,8 +202,7 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
     window = GObject.property(type=Gedit.Window)
     panel = GObject.property(type=Gedit.Panel)
     documents = []
-    _word_error_tags = {}
-    _line_error_tags = {}
+    _errors_tag = {}
     _results = {}
     _errors = {}
 
@@ -183,6 +216,10 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
 
     def do_deactivate(self):
         self._remove_panel()
+
+    def on_notify_style_scheme(self, document, param_object):
+        style = document.get_style_scheme().get_style('def:error')
+        apply_style(style, self._errors_tag[document])
 
     def _insert_panel(self):
         """Insert bottom GEdit panel"""
@@ -232,20 +269,18 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
 
     def _add_tags(self, document):
         """Register new tags in the sourcebuffer"""
-        self._word_error_tags[document] = \
-            document.create_tag("word-error",
-                                underline=Pango.Underline.ERROR)
+        style = document.get_style_scheme().get_style('def:error')
 
-        self._line_error_tags[document] = \
-            document.create_tag("line-error",
-                                background="#ffc0c0")
+        self._errors_tag[document] = \
+            document.create_tag("flake8-error",
+                                underline=Pango.Underline.ERROR)
+        apply_style(style, self._errors_tag[document])
 
     def _remove_tags(self, document):
         """Remove not anymore used tags"""
-        if document in self._word_error_tags:
+        if document in self._errors_tag:
             start, end = document.get_bounds()
-            document.remove_tag(self._word_error_tags[document], start, end)
-            document.remove_tag(self._line_error_tags[document], start, end)
+            document.remove_tag(self._errors_tag[document], start, end)
 
     def _highlight_errors(self, errors):
         """Colorize error in the sourcebuffer"""
@@ -258,17 +293,8 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
             end = document.get_iter_at_line(err.lineno - 1)
             end.forward_to_line_end()
 
-            # apply tag to word, if any
-            if err.tag:
-                match_start, match_end = \
-                    start.forward_search(err.tag,
-                                         Gtk.TEXT_SEARCH_TEXT_ONLY,
-                                         end)
-                document.apply_tag(self._word_error_tags[document],
-                                   match_start, match_end)
-
             # apply tag to entire line
-            document.apply_tag(self._line_error_tags[document], start, end)
+            document.apply_tag(self._errors_tag[document], start, end)
 
     def display_error_msg(self, document):
         """Display a statusbar message if the current line have errors"""
@@ -331,14 +357,12 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
                 err = Message(self.window.get_active_document,
                               int(groups['line']),
                               int(groups['character'].strip(':')),
-                              groups['message'],
-                              '')
+                              groups['message'],)
             else:
                 err = Message(self.window.get_active_document,
                               int(groups['line']),
                               0,
-                              groups['message'],
-                              '')
+                              groups['message'],)
             errors.append(err)
             self._results[document].add(err)
 
