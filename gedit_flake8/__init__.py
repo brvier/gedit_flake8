@@ -319,8 +319,7 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
             statusbar = self.window.get_statusbar()
             statusbar_ctxtid = statusbar.get_context_id('Flake8')
             statusbar.push(statusbar_ctxtid,
-                           "No errors found on %s."
-                           % path)
+                           "No errors found")
             return
 
         for line in output.splitlines():
@@ -356,5 +355,4 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
                            % (errors[0].lineno, errors[0].message))
         else:
             statusbar.push(statusbar_ctxtid,
-                           "No errors found on %s."
-                           % path)
+                           "No errors found")
