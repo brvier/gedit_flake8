@@ -318,6 +318,8 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
             self._results[document].clear()
 
         if not output:
+            statusbar = self.window.get_statusbar()
+            statusbar_ctxtid = statusbar.get_context_id('Flake8')
             statusbar.push(statusbar_ctxtid,
                            "No errors found on %s."
                            % path)
