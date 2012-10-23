@@ -218,8 +218,6 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
         document.connect('cursor-moved', self.display_error_msg)
         self._add_tags(document)
 
-        print 'on_tab_added'
-
     def on_tab_removed(self, window, tab):
         """Cleaning results not needed anymore"""
         document = tab.get_document()
@@ -294,8 +292,6 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
         if document is None:
             return True
 
-        print document.get_tag_table()
-        print dir(document.get_tag_table())
         try:
             if document.get_language().get_name() != 'Python':
                 return True
