@@ -3,8 +3,8 @@ GEdit-Flake8
 
 GEdit-Flake8 is a python plugin to use flake8 inside GEdit 3.
 
-**Sources :** [GitHub](http://github.com/khertan/gedit-flake8)
-**Bugtracker :** [GitHub](http://github.com/khertan/gedit-flake8/issues)
+**Sources :** [GitHub](http://github.com/khertan/gedit_flake8)  
+**Bugtracker :** [GitHub](http://github.com/khertan/gedit_flake8/issues)
 
 Feature
 -------
@@ -37,4 +37,4 @@ Todo
 * Package it
 * Create an installer
 * Test it
-* User color for highlighting error from theme instead of a fixed one
+* User color for highlighting error from theme instead of a fixed one 
