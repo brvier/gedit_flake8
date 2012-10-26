@@ -1,0 +1,27 @@
+Source: gedit-flake8-plugin
+Maintainer: Benoît HERVIER <khertan@khertan.net>
+Section: python
+Priority: optional
+Build-Depends: python-setuptools (>= 0.6b3), debhelper (>= 7), python-support (>= 0.8.4)
+Standards-Version: 3.8.4
+
+Package: gedit-flake8-plugin
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, python-flake8, gedit (>= 3.0.0)
+XB-Python-Version: ${python:Versions}
+Provides: ${python:Provides}
+Description: GEdit-Flake8 is a plugin to use flake8 inside GEdit
+ GEdit-Flake8
+ ============
+ .
+ GEdit-Flake8 is a python plugin to use flake8 inside GEdit 3.
+ .
+ **Sources :** [GitHub](http://github.com/khertan/gedit_flake8)  
+ **Bugtracker :** [GitHub](http://github.com/khertan/gedit_flake8/issues)
+ .
+ Feature
+ -------
+ * Parse file when loading python code, and saving it.
+ * Highlight errors and warning directly in the code
+ * Display the flake8 message in the status bar for an highlighted line
+ * List all errors and warning in the bottom panel

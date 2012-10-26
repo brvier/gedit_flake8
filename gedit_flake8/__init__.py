@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""flake8_gedit.py: A plugin for gedit
+"""gedit-flake8 : A plugin for gedit
    to display error and warning from flake8."""
 
 __author__ = "Benoît HERVIER"
@@ -12,7 +12,12 @@ __maintainer__ = "Benoît HERVIER"
 __email__ = "khertan@khertan.net"
 __status__ = "Alpha"
 
-from gi.repository import GObject, Gedit, Gtk, Pango
+try:
+    from gi.repository import GObject, Gedit, Gtk, Pango
+except ImportError, err:
+    print 'GEdit-Flake8 need to be launched by GEdit 3'
+    print err
+
 import re
 from subprocess import Popen, PIPE
 import os
