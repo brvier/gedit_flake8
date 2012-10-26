@@ -20,7 +20,6 @@ except ImportError, err:
 
 import re
 from subprocess import Popen, PIPE
-import os
 
 
 def apply_style(style, tag):
@@ -163,27 +162,6 @@ class ResultsView(Gtk.TreeView):
         text_iter = document.get_iter_at_line(line)
         view.scroll_to_iter(text_iter, 0.25, False, 0.5, 0.5)
         view.grab_focus()
-
-
-class ResultsPanel(Gtk.ScrolledWindow):
-
-    _ui_file = os.path.join(os.path.dirname(__file__), 'flake8_gedit.ui')
-
-    def __init__(self, instance, window):
-
-        super(ResultsPanel, self).__init__()
-
-        self._window = window
-        self._view = ResultsView(self)
-
-        self.add(self._view)
-        self._view.show()
-
-    def set_model(self, model):
-        self._view.set_model(model)
-
-    def get_window(self):
-        return self._window
 
 
 class ResultsPanel(Gtk.ScrolledWindow):
