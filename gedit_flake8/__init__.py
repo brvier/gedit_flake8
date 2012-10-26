@@ -248,17 +248,13 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
         bottom_panel = self.window.get_bottom_panel()
         bottom_panel.remove_item(self._panel)
 
-    def do_update_state(self):
-        """Parse the document when loaded"""
-        document = self.window.get_active_document()
-        self.analyse(document, None)
-
     def on_tab_added(self, window, tab):
         """Initialize the required vars"""
         document = tab.get_document()
 
         self._results[document] = ResultsModel()
         self._errors[document] = []
+        document.connect('loaded', self.analyse)
         document.connect('saved', self.analyse)
         document.connect('cursor-moved', self.display_error_msg)
         self._add_tags(document)
