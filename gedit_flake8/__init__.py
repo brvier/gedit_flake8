@@ -21,6 +21,7 @@ except ImportError, err:
 import re
 from subprocess import Popen, PIPE
 import os
+import threading
 
 
 def apply_style(style, tag):
@@ -332,6 +333,9 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
         except AttributeError:
             return True
 
+        threading.Thread(target=self._run_flake8, args=(document,)).start()
+
+    def _run_flake8(self, document):
         errors = []
         path = document.get_location().get_path()
         stdout, stderr = Popen(['flake8', path],
