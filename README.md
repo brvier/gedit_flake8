@@ -34,7 +34,4 @@ GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007
 Todo
 ----
 
-* Package it
-* Create an installer
-* Test it
-* User color for highlighting error from theme instead of a fixed one 
+* Use thread for non blocking ui
