@@ -3,3 +3,12 @@ gedit-flake8-plugin (0.3.0-1) unstable; urgency=low
   * source package automatically created by stdeb 0.6.0
 
  -- Benoît HERVIER <khertan@khertan.net>  Tue, 23 Oct 2012 19:13:50 +0200
+
+gedit-flake8-plugin (0.4.0-1) unstable; urgency=low
+
+  * fix redundant calls by Simon Sapin
+  * Run analyse async by Simon Sapin
+  * Catch AttributeError when no language is defined in a gedit document
+  
+ -- Benoît HERVIER <khertan@khertan.net>  Wed, 14 Nov 2012 10:03:00 +0200
+

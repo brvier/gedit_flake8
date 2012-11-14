@@ -7,10 +7,10 @@
 __author__ = "Benoît HERVIER"
 __copyright__ = "Copyright 2012 " + __author__
 __license__ = "GPLv3"
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __maintainer__ = "Benoît HERVIER"
 __email__ = "khertan@khertan.net"
-__status__ = "Alpha"
+__status__ = "Beta"
 
 try:
     from gi.repository import GObject, Gedit, Gtk, Pango
@@ -20,6 +20,7 @@ except ImportError, err:
 
 import re
 from subprocess import Popen, PIPE
+import threading
 
 
 def apply_style(style, tag):
@@ -283,17 +284,22 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
         if document is None:
             return True
 
-        if document.get_language().get_name() != 'Python':
-            return True
+        try:
+            if document.get_language().get_name() == 'Python':
+                curline = document.get_iter_at_mark(
+                    document.get_insert()).get_line() + 1
+                for err in self._errors[document]:
+                    if err.lineno == curline:
+                        statusbar = self.window.get_statusbar()
+                        statusbar_ctxtid = statusbar.get_context_id('Flake8')
+                        statusbar.push(statusbar_ctxtid, 'Line : %s : %s'
+                                       % (err.lineno, err.message))
+        except AttributeError:
+            #document.get_language return None
+            #No language define so nothing to do
+            pass
 
-        curline = document.get_iter_at_mark(
-            document.get_insert()).get_line() + 1
-        for err in self._errors[document]:
-            if err.lineno == curline:
-                statusbar = self.window.get_statusbar()
-                statusbar_ctxtid = statusbar.get_context_id('Flake8')
-                statusbar.push(statusbar_ctxtid, 'Line : %s : %s'
-                               % (err.lineno, err.message))
+        return True
 
     def analyse(self, document, option):
         """Launch a flake8 process and populate vars"""
@@ -306,6 +312,9 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
         except AttributeError:
             return True
 
+        threading.Thread(target=self._run_flake8, args=(document,)).start()
+
+    def _run_flake8(self, document):
         errors = []
         path = document.get_location().get_path()
         stdout, stderr = Popen(['flake8', path],

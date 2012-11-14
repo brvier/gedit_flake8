@@ -31,7 +31,7 @@ Licence
 
 GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007
 
-Todo
-----
+Thanks to
+---------
 
-* Use thread for non blocking ui
+* Simon Sapin : for async patch and fix fix redundant calls
