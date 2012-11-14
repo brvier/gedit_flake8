@@ -7,7 +7,7 @@
 __author__ = "Benoît HERVIER"
 __copyright__ = "Copyright 2012 " + __author__
 __license__ = "GPLv3"
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 __maintainer__ = "Benoît HERVIER"
 __email__ = "khertan@khertan.net"
 __status__ = "Beta"
