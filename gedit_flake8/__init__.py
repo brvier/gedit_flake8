@@ -7,7 +7,7 @@
 __author__ = "Benoît HERVIER"
 __copyright__ = "Copyright 2012 " + __author__
 __license__ = "GPLv3"
-__version__ = "0.3.0"
+__version__ = "0.5.0"
 __maintainer__ = "Benoît HERVIER"
 __email__ = "khertan@khertan.net"
 __status__ = "Alpha"
@@ -20,6 +20,16 @@ except ImportError, err:
 
 import re
 from subprocess import Popen, PIPE
+import threading
+
+GObject.threads_init()
+
+
+def _remove_tags(document, errors_tag):
+    """Remove not anymore used tags"""
+    if errors_tag:
+        start, end = document.get_bounds()
+        document.remove_tag(errors_tag, start, end)
 
 
 def apply_style(style, tag):
@@ -61,6 +71,18 @@ def apply_style(style, tag):
                           Pango.Underline.SINGLE,
                           Pango.Underline.NONE)
     apply_style_prop(tag, style, "strikethrough")
+
+
+class _IdleObject(GObject.Object):
+    """
+    Override gobject.GObject to always emit signals in the main thread
+    by emmitting on an idle handler
+    """
+    def __init__(self):
+        GObject.Object.__init__(self)
+
+    def emit(self, *args):
+        GObject.idle_add(GObject.Object.emit, self, *args)
 
 
 class Message(object):
@@ -182,6 +204,93 @@ class ResultsPanel(Gtk.ScrolledWindow):
         return self.window
 
 
+class Worker(threading.Thread, _IdleObject):
+    __gsignals__ = {
+        "completed": (
+            GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, []), }
+
+    def __init__(self, document, errors_tag):
+        self.document = document
+        threading.Thread.__init__(self)
+        _IdleObject.__init__(self)
+        if errors_tag is None:
+            self._add_tags(document)
+        else:
+            self._errors_tag = errors_tag
+
+        self._results = []
+        self._errors = []
+        self.cancelled = False
+
+    def _add_tags(self, document):
+        """Register new tags in the sourcebuffer"""
+        style = document.get_style_scheme().get_style('def:error')
+
+        self._errors_tag = \
+            document.create_tag("flake8-error",
+                                underline=Pango.Underline.ERROR)
+        apply_style(style, self._errors_tag)
+
+    def _highlight_errors(self, errors):
+        """Colorize error in the sourcebuffer"""
+        document = self.document
+
+        for err in errors:
+
+            start = document.get_iter_at_line(err.lineno - 1)
+
+            end = document.get_iter_at_line(err.lineno - 1)
+            end.forward_to_line_end()
+
+            # apply tag to entire line
+            document.apply_tag(self._errors_tag, start, end)
+
+    def run(self):
+        errors = []
+        path = self.document.get_location().get_path()
+        stdout, stderr = Popen(['flake8', path],
+                               stdout=PIPE, stderr=PIPE).communicate()
+        output = stdout if stdout else stderr
+
+        line_format = re.compile(
+            '(?P<path>[^:]+):(?P<line>\d+):'
+            + '(?P<character>\d+:)?\s(?P<message>.*$)')
+
+        _remove_tags(self.document, self._errors_tag)
+
+        self._results = ResultsModel()
+
+        if not output:
+            if not self.cancelled:
+                self.emit("completed")
+            return
+
+        for line in output.splitlines():
+            m = line_format.match(line)
+            if not m:
+                continue
+            groups = m.groupdict()
+            if groups['character']:
+                err = Message(self.document,
+                              int(groups['line']),
+                              int(groups['character'].strip(':')),
+                              groups['message'],)
+            else:
+                err = Message(self.document,
+                              int(groups['line']),
+                              0,
+                              groups['message'],)
+            errors.append(err)
+            self._results.add(err)
+
+        _remove_tags(self.document, self._errors_tag)
+        self._errors = errors
+        self._highlight_errors(self._errors)
+
+        if not self.cancelled:
+            self.emit("completed")
+
+
 class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
     __gtype_name__ = "Flake8"
 
@@ -191,6 +300,7 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
     _errors_tag = {}
     _results = {}
     _errors = {}
+    _worker = None
 
     def __init__(self):
         GObject.Object.__init__(self)
@@ -221,63 +331,6 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
                               'Flake8 Results',
                               image)
 
-    def _remove_panel(self):
-        """Remove the inserted panel from GEdit"""
-        bottom_panel = self.window.get_bottom_panel()
-        bottom_panel.remove_item(self._panel)
-
-    def on_tab_added(self, window, tab):
-        """Initialize the required vars"""
-        document = tab.get_document()
-
-        self._results[document] = ResultsModel()
-        self._errors[document] = []
-        document.connect('loaded', self.analyse)
-        document.connect('saved', self.analyse)
-        document.connect('cursor-moved', self.display_error_msg)
-        self._add_tags(document)
-
-    def on_tab_removed(self, window, tab):
-        """Cleaning results not needed anymore"""
-        document = tab.get_document()
-        if document in self._results:
-            self._results[document] = None
-            del self._results[document]
-
-            self._errors[document] = None
-            del self._errors[document]
-
-            self._remove_tags(document)
-
-    def _add_tags(self, document):
-        """Register new tags in the sourcebuffer"""
-        style = document.get_style_scheme().get_style('def:error')
-
-        self._errors_tag[document] = \
-            document.create_tag("flake8-error",
-                                underline=Pango.Underline.ERROR)
-        apply_style(style, self._errors_tag[document])
-
-    def _remove_tags(self, document):
-        """Remove not anymore used tags"""
-        if document in self._errors_tag:
-            start, end = document.get_bounds()
-            document.remove_tag(self._errors_tag[document], start, end)
-
-    def _highlight_errors(self, errors):
-        """Colorize error in the sourcebuffer"""
-        document = self.window.get_active_document()
-
-        for err in errors:
-
-            start = document.get_iter_at_line(err.lineno - 1)
-
-            end = document.get_iter_at_line(err.lineno - 1)
-            end.forward_to_line_end()
-
-            # apply tag to entire line
-            document.apply_tag(self._errors_tag[document], start, end)
-
     def display_error_msg(self, document):
         """Display a statusbar message if the current line have errors"""
         if document is None:
@@ -294,71 +347,74 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
                 statusbar_ctxtid = statusbar.get_context_id('Flake8')
                 statusbar.push(statusbar_ctxtid, 'Line : %s : %s'
                                % (err.lineno, err.message))
+                return True
+        return False
+
+    def _remove_panel(self):
+        """Remove the inserted panel from GEdit"""
+        bottom_panel = self.window.get_bottom_panel()
+        bottom_panel.remove_item(self._panel)
+
+    def on_tab_added(self, window, tab):
+        """Initialize the required vars"""
+        document = tab.get_document()
+
+        self._results[document] = ResultsModel()
+        self._errors[document] = []
+        self._errors_tag[document] = None
+        document.connect('loaded', self.analyse)
+        document.connect('saved', self.analyse)
+        document.connect('cursor-moved', self.display_error_msg)
+
+    def on_tab_removed(self, window, tab):
+        """Cleaning results not needed anymore"""
+        document = tab.get_document()
+        if document in self._results:
+            self._results[document] = None
+            del self._results[document]
+
+            self._errors[document] = None
+            del self._errors[document]
+
+            _remove_tags(document, self._errors_tag[document])
+
+    def completedCb(self, *userData):
+        errors = self._worker._errors
+        document = self._worker.document
+        self._errors[document] = errors
+        self._results[document] = self._worker._results
+        self._errors_tag[document] = self._worker._errors_tag
+
+        if len(errors) > 0:
+            if not self.display_error_msg(document):
+                statusbar = self.window.get_statusbar()
+                statusbar_ctxtid = statusbar.get_context_id('Flake8')
+                statusbar.push(statusbar_ctxtid,
+                               'Line : %s : %s'
+                               % (errors[0].lineno, errors[0].message))
+        else:
+            statusbar = self.window.get_statusbar()
+            statusbar_ctxtid = statusbar.get_context_id('Flake8')
+            statusbar.push(statusbar_ctxtid,
+                           "No errors found")
+
+        try:
+            self._panel.set_model(self._results[document])
+        except:
+            pass
+        self._worker = None
 
     def analyse(self, document, option):
-        """Launch a flake8 process and populate vars"""
+        """Launch a process and populate vars"""
         if document is None:
             return True
-
         try:
             if document.get_language().get_name() != 'Python':
                 return True
         except AttributeError:
             return True
-
-        errors = []
-        path = document.get_location().get_path()
-        stdout, stderr = Popen(['flake8', path],
-                               stdout=PIPE, stderr=PIPE).communicate()
-        output = stdout if stdout else stderr
-
-        line_format = re.compile(
-            '(?P<path>[^:]+):(?P<line>\d+):'
-            + '(?P<character>\d+:)?\s(?P<message>.*$)')
-
-        self._remove_tags(document)
-
-        if document not in self._results:
-            self._results[document] = ResultsModel()
-        else:
-            self._results[document].clear()
-
-        if not output:
-            statusbar = self.window.get_statusbar()
-            statusbar_ctxtid = statusbar.get_context_id('Flake8')
-            statusbar.push(statusbar_ctxtid,
-                           "No errors found")
-            return
-
-        for line in output.splitlines():
-            m = line_format.match(line)
-            if not m:
-                continue
-            groups = m.groupdict()
-            if groups['character']:
-                err = Message(self.window.get_active_document,
-                              int(groups['line']),
-                              int(groups['character'].strip(':')),
-                              groups['message'],)
-            else:
-                err = Message(self.window.get_active_document,
-                              int(groups['line']),
-                              0,
-                              groups['message'],)
-            errors.append(err)
-            self._results[document].add(err)
-
-        self._remove_tags(document)
-        self._errors[document] = errors
-        self._highlight_errors(self._errors[document])
-        self._panel.set_model(self._results[document])
-
-        statusbar = self.window.get_statusbar()
-        statusbar_ctxtid = statusbar.get_context_id('Flake8')
-        if len(errors) > 0:
-            statusbar.push(statusbar_ctxtid,
-                           'Line : %s : %s'
-                           % (errors[0].lineno, errors[0].message))
-        else:
-            statusbar.push(statusbar_ctxtid,
-                           "No errors found")
+        if self._worker is not None:
+            self._worker.cancelled = True
+        self._worker = Worker(document, self._errors_tag[document])
+        self._worker.connect("completed", self.completedCb)
+        self._worker.start()
