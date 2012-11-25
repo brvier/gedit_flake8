@@ -7,7 +7,7 @@
 __author__ = "Benoît HERVIER"
 __copyright__ = "Copyright 2012 " + __author__
 __license__ = "GPLv3"
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 __maintainer__ = "Benoît HERVIER"
 __email__ = "khertan@khertan.net"
 __status__ = "Beta"
@@ -309,6 +309,7 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
         self._insert_panel()
         self.window.connect("tab-added", self.on_tab_added)
         self.window.connect("tab-removed", self.on_tab_removed)
+        self.window.connect("active-tab-changed", self.on_active_tab_changed)
 
     def do_deactivate(self):
         self._remove_panel()
@@ -355,6 +356,9 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
         bottom_panel = self.window.get_bottom_panel()
         bottom_panel.remove_item(self._panel)
 
+    def on_active_tab_changed(self, window, tab):
+        self._panel.set_model(self._results[tab.get_document()])
+
     def on_tab_added(self, window, tab):
         """Initialize the required vars"""
         document = tab.get_document()
@@ -362,6 +366,7 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
         self._results[document] = ResultsModel()
         self._errors[document] = []
         self._errors_tag[document] = None
+
         document.connect('loaded', self.analyse)
         document.connect('saved', self.analyse)
         document.connect('cursor-moved', self.display_error_msg)
@@ -413,6 +418,7 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
                 return True
         except AttributeError:
             return True
+
         if self._worker is not None:
             self._worker.cancelled = True
         self._worker = Worker(document, self._errors_tag[document])
