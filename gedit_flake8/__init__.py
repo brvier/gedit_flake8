@@ -10,7 +10,7 @@ __license__ = "GPLv3"
 __version__ = "0.5.0"
 __maintainer__ = "Benoît HERVIER"
 __email__ = "khertan@khertan.net"
-__status__ = "Alpha"
+__status__ = "Beta"
 
 try:
     from gi.repository import GObject, Gedit, Gtk, Pango
