@@ -7,7 +7,7 @@
 __author__ = "Benoît HERVIER"
 __copyright__ = "Copyright 2012 " + __author__
 __license__ = "GPLv3"
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 __maintainer__ = "Benoît HERVIER"
 __email__ = "khertan@khertan.net"
 __status__ = "Beta"
@@ -356,7 +356,10 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
         if document is None:
             return True
 
-        if document.get_language().get_name() != 'Python':
+        try:
+            if document.get_language().get_name() != 'Python':
+                return True
+        except AttributeError, err:
             return True
 
         curline = document.get_iter_at_mark(
