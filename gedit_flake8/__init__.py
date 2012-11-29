@@ -7,7 +7,7 @@
 __author__ = "Benoît HERVIER"
 __copyright__ = "Copyright 2012 " + __author__
 __license__ = "GPLv3"
-__version__ = "0.5.1"
+__version__ = "0.6.0"
 __maintainer__ = "Benoît HERVIER"
 __email__ = "khertan@khertan.net"
 __status__ = "Beta"
@@ -247,7 +247,26 @@ class Worker(threading.Thread, _IdleObject):
 
     def run(self):
         errors = []
-        path = self.document.get_location().get_path()
+        location = self.document.get_location()
+
+        if location is None:
+            return
+
+        path = location.get_path()
+        if path is None:
+            import codecs
+            try:
+                encoding = self.document.get_encoding().get_charset()
+            except Exception, err:
+                encoding = 'utf-8'
+            path = '/tmp/gedit_flake8.py'
+            start, end = self.document.get_bounds()
+            with codecs.open(path, 'w', encoding=encoding) as fh:
+                fh.write(unicode(
+                         self.document.get_text(start, end,
+                                                include_hidden_chars=True),
+                         encoding))
+
         stdout, stderr = Popen(['flake8', path],
                                stdout=PIPE, stderr=PIPE).communicate()
         output = stdout if stdout else stderr
