@@ -7,7 +7,7 @@
 __author__ = "Benoît HERVIER"
 __copyright__ = "Copyright 2012 " + __author__
 __license__ = "GPLv3"
-__version__ = "0.6.1"
+__version__ = "0.6.2"
 __maintainer__ = "Benoît HERVIER"
 __email__ = "khertan@khertan.net"
 __status__ = "Beta"
@@ -249,7 +249,10 @@ class Worker(threading.Thread, _IdleObject):
         errors = []
         location = self.document.get_location()
 
+        _remove_tags(self.document, self._errors_tag)
+
         if location is None:
+            print 'Location not found ...'
             return
 
         path = location.get_path()
@@ -274,8 +277,6 @@ class Worker(threading.Thread, _IdleObject):
         line_format = re.compile(
             '(?P<path>[^:]+):(?P<line>\d+):'
             + '(?P<character>\d+:)?\s(?P<message>.*$)')
-
-        _remove_tags(self.document, self._errors_tag)
 
         self._results = ResultsModel()
 
