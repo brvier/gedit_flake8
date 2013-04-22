@@ -14,9 +14,9 @@ __status__ = "Beta"
 
 try:
     from gi.repository import GObject, Gedit, Gtk, Pango
-except ImportError, err:
-    print 'GEdit-Flake8 need to be launched by GEdit 3'
-    print err
+except ImportError as err:
+    print('GEdit-Flake8 needs to be launched by GEdit 3')
+    print(err)
 
 import re
 from subprocess import Popen, PIPE
@@ -56,9 +56,9 @@ def apply_style(style, tag):
                               "weight",
                               Pango.Weight.BOLD,
                               Pango.Weight.NORMAL)
-    except TypeError, err:
+    except TypeError as err:
         #Different version of gtk 3 have different properties ... :(
-        print err
+        print(err)
 
     apply_style_prop_bool(tag,
                           style,
@@ -252,7 +252,7 @@ class Worker(threading.Thread, _IdleObject):
         _remove_tags(self.document, self._errors_tag)
 
         if location is None:
-            print 'Location not found ...'
+            print('Location not found ...')
             return
 
         path = location.get_path()
@@ -260,7 +260,7 @@ class Worker(threading.Thread, _IdleObject):
             import codecs
             try:
                 encoding = self.document.get_encoding().get_charset()
-            except Exception, err:
+            except Exception as err:
                 encoding = 'utf-8'
             path = '/tmp/gedit_flake8.py'
             start, end = self.document.get_bounds()
@@ -286,6 +286,7 @@ class Worker(threading.Thread, _IdleObject):
             return
 
         for line in output.splitlines():
+            line = line.decode('utf8')
             m = line_format.match(line)
             if not m:
                 continue
@@ -360,7 +361,7 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
         try:
             if document.get_language().get_name() != 'Python':
                 return True
-        except AttributeError, err:
+        except AttributeError as err:
             return True
 
         curline = document.get_iter_at_mark(
