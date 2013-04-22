@@ -13,6 +13,9 @@ Feature
 * Display the flake8 message in the status bar for an highlighted line
 * List all errors and warning in the bottom panel
 
+Gedit 3.8
+---------
+Gedit 3.8 use now python3 for the python module, please use the gedit3.8 branch
 Requirement
 -----------
 * Flake8 must be installed, and available in the path
@@ -34,4 +37,5 @@ GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007
 Thanks to
 ---------
 
-* Simon Sapin : for async patch and fix fix redundant calls
+* Simon Sapin : for async patch, fix redundant calls, and python3 support for
+  gedit 3.8
