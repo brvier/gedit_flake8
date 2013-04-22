@@ -1,5 +1,5 @@
 [Plugin]
-Loader=python
+Loader=python3
 Module=gedit_flake8
 IAge=3
 Name=Flake8
