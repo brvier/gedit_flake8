@@ -19,7 +19,7 @@ except ImportError, err:
     print err
 
 import re
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, call
 import threading
 
 GObject.threads_init()
@@ -245,6 +245,26 @@ class Worker(threading.Thread, _IdleObject):
             # apply tag to entire line
             document.apply_tag(self._errors_tag, start, end)
 
+    def _flake8_bin(self):
+        """Returns a flake8 valid executable
+
+           flake8 is the default executable, but in Debian systems,
+           for example, package pyflakes provides a pyflakes binary
+           instead of flake8
+        """
+        # list of flake binaries
+        flake8_binaries = ('flake8', 'pyflakes')
+
+        def cmd_exists(cmd):
+            return call("type " + cmd, shell=True, stdout=PIPE, stderr=PIPE) == 0
+
+        for flake8 in flake8_binaries:
+            if cmd_exists(flake8):
+                return flake8
+
+        # default
+        return "flake8"
+
     def run(self):
         errors = []
         location = self.document.get_location()
@@ -270,7 +290,7 @@ class Worker(threading.Thread, _IdleObject):
                                                 include_hidden_chars=True),
                          encoding))
 
-        stdout, stderr = Popen(['flake8', path],
+        stdout, stderr = Popen([self._flake8_bin(), path],
                                stdout=PIPE, stderr=PIPE).communicate()
         output = stdout if stdout else stderr
 
