@@ -1,5 +1,5 @@
 [Plugin]
-Loader=python
+Loader=python3
 Module=gedit_flake8
 IAge=3
 Name=Flake8
@@ -7,3 +7,4 @@ Description=Flake8 for GEdit
 Authors=Benoît HERVIER <khertan@khertan.net>
 Copyright=Copyright © 2012 Benoît HERVIER <khertan@khertan.net>
 Website=http://khertan.net/pages/gedit-flake8.html
+Version=0.7.0

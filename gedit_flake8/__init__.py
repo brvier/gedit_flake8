@@ -7,16 +7,16 @@
 __author__ = "Benoît HERVIER"
 __copyright__ = "Copyright 2012 " + __author__
 __license__ = "GPLv3"
-__version__ = "0.6.2"
+__version__ = "0.7.0"
 __maintainer__ = "Benoît HERVIER"
 __email__ = "khertan@khertan.net"
 __status__ = "Beta"
 
 try:
-    from gi.repository import GObject, Gedit, Gtk, Pango
-except ImportError, err:
-    print 'GEdit-Flake8 need to be launched by GEdit 3'
-    print err
+    from gi.repository import GObject, Gtk, Gedit, Pango
+except ImportError as err:
+    print('GEdit-Flake8 need to be launched by GEdit 3')
+    print(err)
 
 import re
 from subprocess import Popen, PIPE, call
@@ -56,9 +56,9 @@ def apply_style(style, tag):
                               "weight",
                               Pango.Weight.BOLD,
                               Pango.Weight.NORMAL)
-    except TypeError, err:
-        #Different version of gtk 3 have different properties ... :(
-        print err
+    except TypeError as err:
+        # Different version of gtk 3 have different properties ... :(
+        print(err)
 
     apply_style_prop_bool(tag,
                           style,
@@ -74,10 +74,12 @@ def apply_style(style, tag):
 
 
 class _IdleObject(GObject.Object):
+
     """
     Override gobject.GObject to always emit signals in the main thread
     by emmitting on an idle handler
     """
+
     def __init__(self):
         GObject.Object.__init__(self)
 
@@ -256,7 +258,9 @@ class Worker(threading.Thread, _IdleObject):
         flake8_binaries = ('flake8', 'pyflakes')
 
         def cmd_exists(cmd):
-            return call("type " + cmd, shell=True, stdout=PIPE, stderr=PIPE) == 0
+            return call("type " + cmd,
+                        shell=True,
+                        stdout=PIPE, stderr=PIPE) == 0
 
         for flake8 in flake8_binaries:
             if cmd_exists(flake8):
@@ -272,7 +276,7 @@ class Worker(threading.Thread, _IdleObject):
         _remove_tags(self.document, self._errors_tag)
 
         if location is None:
-            print 'Location not found ...'
+            print('Location not found ...')
             return
 
         path = location.get_path()
@@ -280,12 +284,12 @@ class Worker(threading.Thread, _IdleObject):
             import codecs
             try:
                 encoding = self.document.get_encoding().get_charset()
-            except Exception, err:
+            except Exception as err:
                 encoding = 'utf-8'
             path = '/tmp/gedit_flake8.py'
             start, end = self.document.get_bounds()
             with codecs.open(path, 'w', encoding=encoding) as fh:
-                fh.write(unicode(
+                fh.write(str(
                          self.document.get_text(start, end,
                                                 include_hidden_chars=True),
                          encoding))
@@ -306,7 +310,7 @@ class Worker(threading.Thread, _IdleObject):
             return
 
         for line in output.splitlines():
-            m = line_format.match(line)
+            m = line_format.match(line.decode('utf-8'))
             if not m:
                 continue
             groups = m.groupdict()
@@ -335,7 +339,6 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
     __gtype_name__ = "Flake8"
 
     window = GObject.property(type=Gedit.Window)
-    panel = GObject.property(type=Gedit.Panel)
     documents = []
     _errors_tag = {}
     _results = {}
@@ -346,13 +349,19 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
         GObject.Object.__init__(self)
 
     def do_activate(self):
-        self._insert_panel()
+        # self._insert_panel()
+        self._panel = ResultsPanel(self.window)
+        self._panel.show()
+        bottom = self.window.get_bottom_panel()
+        bottom.add_titled(self._panel, "ResultsPanel", "Flake8 Results")
+
         self.window.connect("tab-added", self.on_tab_added)
         self.window.connect("tab-removed", self.on_tab_removed)
         self.window.connect("active-tab-changed", self.on_active_tab_changed)
 
     def do_deactivate(self):
-        self._remove_panel()
+        # self._remove_panel()
+        pass
 
     def on_notify_style_scheme(self, document, param_object):
         style = document.get_style_scheme().get_style('def:error')
@@ -380,7 +389,7 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
         try:
             if document.get_language().get_name() != 'Python':
                 return True
-        except AttributeError, err:
+        except AttributeError as err:
             return True
 
         curline = document.get_iter_at_mark(
@@ -452,8 +461,10 @@ class Flake8Plugin(GObject.Object, Gedit.WindowActivatable):
             pass
         self._worker = None
 
-    def analyse(self, document, option):
+    def analyse(self, doc):
         """Launch a process and populate vars"""
+        document = self.window.get_active_document()
+
         if document is None:
             return True
         try:
